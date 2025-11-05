@@ -25,7 +25,7 @@
     }
     .cabecalho img {
         display: block;
-        margin: 0 auto 5px;
+        margin: 0 auto;
     }
     .data {
         text-align: left;
@@ -53,19 +53,18 @@
         text-align: left;
     }
     td.valor {
-        width: 60px;
-        text-align: right;
-        white-space: nowrap;
+        display: flex;
+        justify-content: space-between;
     }
     .linha {
         border-bottom: 2px dashed #000;
         margin: 5px 0;
     }
     .total {
-        border-top: 1px dashed #000;
-        margin-top: 4px;
+        margin-top: 1px;
         padding-top: 2px;
-        text-align: right;
+        display: flex;
+        justify-content: space-between;
     }
 </style>
 </head>
@@ -75,26 +74,37 @@
         <h2>Donna Rafinha</h2>
     </div>
     <div class="linha"></div>
-    <div>Data: 04/11/2025, 21:56</div>
-    <div>Forma de pagamento: Pix</div>
-    <div>Troco:</div>
+    <div>Data: 05/11/2025</div>
+    <div>Hora:  16:16</div>
     <div class="linha"></div>
 
     <table>
         <tbody><tr>
-                <td class="nome">croped preto</td>
-                <td class="valor">2,22</td>
-              </tr><tr>
-                <td class="nome">croped branco</td>
-                <td class="valor">333,31</td>
-              </tr><tr>
                 <td class="nome">bolca câmpalone de ci</td>
-                <td class="valor">222,45</td>
               </tr>
+              <tr>
+                <td class="valor"><span>01 Un x</span><span>222,45</span><span>222,45</span></td>
+              </tr>
+              <tr>
+                <td class="nome">croped branco</td>
+              </tr>
+              <tr>
+                <td class="valor"><span>01 Un x</span><span>333,31</span><span>333,31</span></td>
+              </tr>
+              <tr>
+                <td class="nome">croped preto</td>
+              </tr>
+              <tr>
+                <td class="valor"><span>01 Un x</span><span>2,22</span><span>2,22</span></td>
+              </tr>
+              
         </tbody>
     </table>
     <div class="linha"></div>
-    <div class="total">TOTAL: R$ 557,98</div>
+    <div class="total"><span>QTD. total de itens: </span><span>3</span></div>
+    <div class="total"><span>TOTAL: </span><span>R$ 557,98</span></div>
+    <div class="total"><span>Pix: </span><span>R$ 557,98</span></div>
+    <div  class="total"><span>Troco: </span><span></span></div>
     <div class="linha"></div>
     <div class="cabecalho">Obrigado pela preferência!</div>
 </body>

@@ -1,10 +1,15 @@
 <?php
 $dados = [
     'dataAtual' => $_POST['dataAtual'] ?? '',
+    'valor_troco' => $_POST['valor_troco'] ?? 'R$ 0,00',
+    'valor_pago' => $_POST['valor_pago'] ?? '',
     'forma_pag' => $_POST['forma_pag'] ?? '',
     'valor_venda' => $_POST['valor_venda'] ?? '',
     'produtos' => json_decode($_POST['produtos'] ?? '[]', true)
 ];
+
+list($data, $hora) = explode(',', $dados['dataAtual']);
+$total_itens = count($dados['produtos']);
 
 $html = '<!doctype html>
 <html lang="pt-BR">
@@ -33,7 +38,7 @@ $html = '<!doctype html>
     }
     .cabecalho img {
         display: block;
-        margin: 0 auto 5px;
+        margin: 0 auto;
     }
     .data {
         text-align: left;
@@ -61,19 +66,18 @@ $html = '<!doctype html>
         text-align: left;
     }
     td.valor {
-        width: 60px;
-        text-align: right;
-        white-space: nowrap;
+        display: flex;
+        justify-content: space-between;
     }
     .linha {
         border-bottom: 2px dashed #000;
         margin: 5px 0;
     }
     .total {
-        border-top: 1px dashed #000;
-        margin-top: 4px;
+        margin-top: 1px;
         padding-top: 2px;
-        text-align: right;
+        display: flex;
+        justify-content: space-between;
     }
 </style>
 </head>
@@ -83,9 +87,8 @@ $html = '<!doctype html>
         <h2>Donna Rafinha</h2>
     </div>
     <div class="linha"></div>
-    <div>Data: ' . htmlspecialchars($dados['dataAtual']) . '</div>
-    <div>Forma de pagamento: ' . htmlspecialchars($dados['forma_pag']) . '</div>
-    <div>Troco:</div>
+    <div>Data: ' . htmlspecialchars($data) . '</div>
+    <div>Hora: ' . htmlspecialchars($hora) . '</div>
     <div class="linha"></div>
 
     <table>
@@ -96,15 +99,21 @@ foreach ($dados['produtos'] as $p) {
     $valor = number_format($p['valor'], 2, ',', '.');
     $html .= '<tr>
                 <td class="nome">' . htmlspecialchars($nome) . '</td>
-                <td class="valor">' . $valor . '</td>
-              </tr>';
+              </tr>
+              <tr>
+                <td class="valor"><span>01 Un x</span><span>' . $valor . '</span><span>' . $valor . '</span></td>
+              </tr>
+              ';
 }
 
 $html .= '
         </tbody>
     </table>
     <div class="linha"></div>
-    <div class="total">TOTAL: ' . htmlspecialchars($dados['valor_venda']) . '</div>
+    <div class="total"><span>QTD. total de itens: </span><span>' . $total_itens . '</span></div>
+    <div class="total"><span>TOTAL: </span><span>' . htmlspecialchars($dados['valor_venda']) . '</span></div>
+    <div class="total"><span>' . htmlspecialchars($dados['forma_pag']) . ': </span><span>' . htmlspecialchars($dados['valor_venda']) . '</span></div>
+    <div  class="total"><span>Troco: </span><span>' . htmlspecialchars($dados['valor_troco']) . '</span></div>
     <div class="linha"></div>
     <div class="cabecalho">Obrigado pela preferência!</div>
 </body>

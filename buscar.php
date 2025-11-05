@@ -4,15 +4,18 @@ require_once "config.php";
 
 $nome = trim($_POST["busca"] ?? '');
 
-if (!$nome) {
-    exit; // Se a busca estiver vazia, não faz nada
+if ($nome === '') {
+    // Busca padrão: últimas roupas cadastradas (ordem decrescente por ID)
+    $stmt = $link->prepare("SELECT * FROM roupas ORDER BY id DESC LIMIT 10");
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    // Busca por nome
+    $stmt = $link->prepare("SELECT * FROM roupas WHERE nome LIKE CONCAT(?, '%')");
+    $stmt->bind_param("s", $nome);
+    $stmt->execute();
+    $result = $stmt->get_result();
 }
-
-// Usar prepared statement para evitar SQL injection
-$stmt = $link->prepare("SELECT * FROM roupas WHERE nome LIKE CONCAT(?, '%')");
-$stmt->bind_param("s", $nome);
-$stmt->execute();
-$result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {

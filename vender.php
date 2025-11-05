@@ -138,7 +138,7 @@
         </div>
         <div>
             <div class="d-flex">
-                <div class="form-group d-flex align-items-center d-flex flex-column" style="margin-right: 20px">
+                <div class="form-group d-flex align-items-center d-flex flex-column" style="margin-right: 20px; width:200px;">
                     <input type="text" autocomplete="off" placeholder="0,00" class="form-control" id="valor_venda" name="valor_venda">
                     <select class="form-select" id="forma_pag" aria-label="Default select example">
                         <option selected>Forma de pagamento</option>
@@ -147,7 +147,10 @@
                         <option>Fiado</option>
                         <option>Cartão</option>
                     </select>
+                    <input type="text" id="valor_troco" class="form-control mt-2" placeholder="Valor do troco"
+                            style="display:none" autocomplete="off">
                 </div>
+
                 <button class="btn btn-primary btn-vender" onclick="fazerVenda()">
                     <i class="bi bi-currency-dollar"></i>
                     Vender
@@ -171,6 +174,12 @@
             }
         }, 100);
     }
+
+    $(document).ready(function() {
+        $.post("buscar.php", { busca: '' }).done(function(result) {
+            $('#resultados').html(result);
+        });
+    });
 
     $("#buscar").keyup(function(e) {
         doSearch(e.target.value);
@@ -217,6 +226,8 @@
 
         var valor_venda = $('#valor_venda').val();
         var forma_pag = $('#forma_pag').val();
+        var valor_troco = $('#valor_troco').val();
+        
 
         if (!valor_venda) {
             $('#valor_venda').addClass("is-invalid");
@@ -233,12 +244,15 @@
         }
 
         // Exibe o modal
-        var modal = new bootstrap.Modal(document.getElementById('modalVenda'));
+        var modal = new bootstrap.Modal(document.getElementById('modalVenda'), {
+            backdrop: 'static',
+            keyboard: false
+        });
         modal.show();
 
         // Botão imprimir
         $('#btnImprimir').off('click').on('click', function() {
-            imprimirVenda(valor_venda, forma_pag);
+            imprimirVenda(valor_venda, forma_pag, valor_troco);
         });
 
         // Botão finalizar
@@ -255,7 +269,7 @@
     }
 
     $(function(){
-        $('#valor_venda').maskMoney({
+        $('#valor_venda, #valor_troco').maskMoney({
             prefix:'R$ ',
             allowNegative: true,
             thousands:'.',
@@ -263,6 +277,14 @@
             affixesStay: true
         });
     });
+
+$('#forma_pag').on('change', function() {
+    if ($(this).val() === 'Dinheiro') {
+        $('#valor_troco').show();
+    } else {
+        $('#valor_troco').hide().val('');
+    }
+});
 </script>
 <!-- Modal de confirmação -->
 <div class="modal fade" id="modalVenda" tabindex="-1" aria-labelledby="modalVendaLabel" aria-hidden="true">
@@ -276,11 +298,11 @@
         <p>O que deseja fazer agora?</p>
       </div>
       <div class="modal-footer d-flex justify-content-around">
-        <button type="button" class="btn btn-secondary" id="btnFinalizar">
+        <button type="button" class="btn btn-success" id="btnFinalizar">
           <i class="bi bi-check-circle"></i> Finalizar
         </button>
         <button type="button" class="btn btn-primary" id="btnImprimir">
-          <i class="bi bi-printer"></i> Imprimir cupom fiscal
+          <i class="bi bi-printer"></i> Imprimir
         </button>
       </div>
     </div>
@@ -288,17 +310,6 @@
 </div>
 <script src="./js/qz-tray.js"></script>
 <script>
-    // Configuração global do QZ Tray
-    qz.security.setCertificatePromise(function(resolve, reject) {
-        // Certificado de teste (usado apenas localmente)
-        resolve("-----BEGIN CERTIFICATE-----\nMIID...SEU_CERT_AQUI...-----END CERTIFICATE-----");
-    });
-
-    qz.security.setSignaturePromise(function(toSign) {
-        return function(resolve, reject) {
-            resolve(); // sem assinatura (modo simples/local)
-        };
-    });
 
     // Função que conecta o QZ Tray
     function conectarQZ() {
@@ -310,14 +321,13 @@
         return Promise.resolve();
     }
 
-    async function imprimirVenda(valor_venda, forma_pag) {
+    async function imprimirVenda(valor_venda, forma_pag, valor_troco) {
         const dataAtual = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
         const conteudo = `
          Donna Rafinha
 --------------------------------
 Data: ${dataAtual}
 Forma de pagamento: ${forma_pag}
-Troco: 
 --------------------------------
 ${produtos.map(p => `${p.nome.substring(0, 22).padEnd(23, ' ')} R$${p.valor.toString()}`).join('\n')}
 --------------------------------
@@ -332,6 +342,7 @@ Obrigado pela preferência!
         dataAtual,
         forma_pag,
         valor_venda,
+        valor_troco,
         produtos
     };
     localStorage.setItem("vendaAtual", JSON.stringify(dadosVenda));
@@ -343,6 +354,7 @@ Obrigado pela preferência!
             dataAtual,
             forma_pag,
             valor_venda,
+            valor_troco,
             produtos: JSON.stringify(produtos)
         });
 
