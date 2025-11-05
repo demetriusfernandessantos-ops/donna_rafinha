@@ -176,40 +176,34 @@
         doSearch(e.target.value);
     });
 
-    // Função para converter valores para número corretamente
     function parseValor(valor) {
         if (!valor) return 0;
-        // remove R$, espaços e converte vírgula para ponto
         valor = valor.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
         var n = parseFloat(valor);
         return isNaN(n) ? 0 : n;
     }
 
-    // Função para adicionar produto com nome e valor
-function adicionar(nome, id, valor) {
-    var valorNum = parseValor(valor);
+    function adicionar(nome, id, valor) {
+        var valorNum = parseValor(valor);
+        produtos.push({ id, nome, valor: valorNum });
 
-    produtos.push({ id, nome, valor: valorNum });
+        $('#produtos ul').prepend(`
+            <li class="list-group-item produto-item">
+                <span class="produto-nome" title="${nome}">${nome}</span>
+                <span class="produto-valor">R$ ${valorNum.toFixed(2).replace('.', ',')}</span>
+                <button class="btn btn-danger btn-sm produto-remove" onclick="remover(this.parentNode, ${id})">X</button>
+            </li>
+        `);
 
-    $('#produtos').prepend(`
-        <li class="list-group-item produto-item">
-            <span class="produto-nome" title="${nome}">${nome}</span>
-            <span class="produto-valor">R$ ${valorNum.toFixed(2).replace('.', ',')}</span>
-            <button class="btn btn-danger btn-sm produto-remove" onclick="remover(this.parentNode, ${id})">X</button>
-        </li>
-    `);
+        atualizarTotal();
+    }
 
-    atualizarTotal();
-}
-
-    // Remover produto da lista
     function remover(elemento, id) {
         produtos = produtos.filter(p => p.id != id);
         $(elemento).remove();
         atualizarTotal();
     }
 
-    // Atualiza o campo de valor total automaticamente
     function atualizarTotal() {
         var total = produtos.reduce((soma, p) => soma + (parseFloat(p.valor) || 0), 0);
         $('#valor_venda').val('R$ ' + total.toFixed(2).replace('.', ','));
@@ -238,8 +232,23 @@ function adicionar(nome, id, valor) {
             $('#forma_pag').removeClass("is-invalid");
         }
 
-        var idProdutos = produtos.map(p => p.id);
+        // Exibe o modal
+        var modal = new bootstrap.Modal(document.getElementById('modalVenda'));
+        modal.show();
 
+        // Botão imprimir
+        $('#btnImprimir').off('click').on('click', function() {
+            imprimirVenda(valor_venda, forma_pag);
+        });
+
+        // Botão finalizar
+        $('#btnFinalizar').off('click').on('click', function() {
+            finalizarVenda(valor_venda, forma_pag);
+        });
+    }
+
+    function finalizarVenda(valor_venda, forma_pag) {
+        var idProdutos = produtos.map(p => p.id);
         $.post("fazer_venda.php", { valor_venda, forma_pag, idProdutos }).done(function(result) {
             window.location.href = "vendas_listagem.php";
         });
@@ -255,5 +264,119 @@ function adicionar(nome, id, valor) {
         });
     });
 </script>
+<!-- Modal de confirmação -->
+<div class="modal fade" id="modalVenda" tabindex="-1" aria-labelledby="modalVendaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalVendaLabel">Venda concluída</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p>O que deseja fazer agora?</p>
+      </div>
+      <div class="modal-footer d-flex justify-content-around">
+        <button type="button" class="btn btn-secondary" id="btnFinalizar">
+          <i class="bi bi-check-circle"></i> Finalizar
+        </button>
+        <button type="button" class="btn btn-primary" id="btnImprimir">
+          <i class="bi bi-printer"></i> Imprimir cupom fiscal
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="./js/qz-tray.js"></script>
+<script>
+    // Configuração global do QZ Tray
+    qz.security.setCertificatePromise(function(resolve, reject) {
+        // Certificado de teste (usado apenas localmente)
+        resolve("-----BEGIN CERTIFICATE-----\nMIID...SEU_CERT_AQUI...-----END CERTIFICATE-----");
+    });
+
+    qz.security.setSignaturePromise(function(toSign) {
+        return function(resolve, reject) {
+            resolve(); // sem assinatura (modo simples/local)
+        };
+    });
+
+    // Função que conecta o QZ Tray
+    function conectarQZ() {
+        if (!qz.websocket.isActive()) {
+            return qz.websocket.connect().catch(err => {
+                alert("Erro ao conectar com QZ Tray: " + err);
+            });
+        }
+        return Promise.resolve();
+    }
+
+    async function imprimirVenda(valor_venda, forma_pag) {
+        const dataAtual = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        const conteudo = `
+         Donna Rafinha
+--------------------------------
+Data: ${dataAtual}
+Forma de pagamento: ${forma_pag}
+Troco: 
+--------------------------------
+${produtos.map(p => `${p.nome.substring(0, 22).padEnd(23, ' ')} R$${p.valor.toString()}`).join('\n')}
+--------------------------------
+TOTAL: ${valor_venda}
+--------------------------------
+Obrigado pela preferência!
+
+`;
+
+
+    const dadosVenda = {
+        dataAtual,
+        forma_pag,
+        valor_venda,
+        produtos
+    };
+    localStorage.setItem("vendaAtual", JSON.stringify(dadosVenda));
+
+        try {
+
+
+        await $.post('impressao/cupom.php', {
+            dataAtual,
+            forma_pag,
+            valor_venda,
+            produtos: JSON.stringify(produtos)
+        });
+
+
+            await conectarQZ();
+
+            // Localiza a impressora instalada no PC
+            const printer = await qz.printers.find("IMPRESSORA MONICA"); // altere para o nome da sua impressora térmica
+            
+            const config = qz.configs.create(printer, {
+                colorType: 'blackwhite',
+                copies: 1,
+                density: 2,
+                duplex: false,
+                altPrinting: false,
+                encoding: 'Cp850',
+                units: 'mm',
+                margins: { top: 0, right: 0, bottom: 0, left: 0 },
+                paperWidth: 58, // largura do papel
+            });
+
+            
+
+        await qz.print(config, [
+            { type: 'pixel', format: 'html', flavor: 'file', data: 'impressao/cupom.html' },
+            //{ type: 'raw', format: 'plain', data: conteudo + "\n\n\n\n\x1D\x56\x01" } // corte automático
+        ]);
+
+
+        } catch (err) {
+            console.log("Erro na impressão: " + err);
+        }
+    }
+</script>
 </body>
 </html>
+
