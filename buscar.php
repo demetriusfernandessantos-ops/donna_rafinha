@@ -6,7 +6,7 @@ $nome = trim($_POST["busca"] ?? '');
 
 if ($nome === '') {
     // Busca padrão: últimas roupas cadastradas (ordem decrescente por ID)
-    $stmt = $link->prepare("SELECT * FROM roupas ORDER BY id DESC LIMIT 10");
+    $stmt = $link->prepare("SELECT * FROM roupas ORDER BY id DESC LIMIT 200");
     $stmt->execute();
     $result = $stmt->get_result();
 } else {
