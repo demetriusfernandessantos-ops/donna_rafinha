@@ -91,7 +91,7 @@ if($result = mysqli_query($link, $sql)){
             echo "<tr>";
             echo "<td>" . $row['id'] . "</td>";
 
-            if(!empty($row['imagem_base64']) && !empty($row['extensao'])) {
+            if($row['imagem_base64']) {
                 echo '<td><img src="data:image/' . $row['extensao'] . ';base64,' . $row['imagem_base64'] . '" class="img-thumb" alt="Imagem"></td>';
             } else {
                 echo "<td><i class='bi bi-image' style='font-size: 2rem; color: #ccc;'></i></td>";
